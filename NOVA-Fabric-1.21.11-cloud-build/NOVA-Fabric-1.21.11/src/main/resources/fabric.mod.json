@@ -1,0 +1,18 @@
+{
+  "schemaVersion": 1,
+  "id": "nova",
+  "version": "${version}",
+  "name": "NOVA",
+  "description": "NOVA client-side utilities for Fabric.",
+  "authors": ["NOVA"],
+  "environment": "client",
+  "entrypoints": {
+    "client": ["dev.nova.NovaClient"]
+  },
+  "depends": {
+    "fabricloader": ">=0.18.1",
+    "minecraft": "1.21.11",
+    "java": ">=21",
+    "fabric-api": "*"
+  }
+}
