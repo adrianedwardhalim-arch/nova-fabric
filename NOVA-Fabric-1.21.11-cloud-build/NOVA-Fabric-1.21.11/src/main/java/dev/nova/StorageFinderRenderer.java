@@ -3,6 +3,7 @@ package dev.nova;
 import net.fabricmc.fabric.api.client.rendering.v1.world.WorldRenderEvents;
 import net.minecraft.block.BlockState;
 import net.minecraft.client.MinecraftClient;
+import net.minecraft.client.render.RenderLayer;
 import net.minecraft.client.render.VertexRendering;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.Vec3d;
@@ -12,13 +13,14 @@ public final class StorageFinderRenderer {
     }
 
     public static void register() {
-        WorldRenderEvents.AFTER_ENTITIES.register(context -> {
+        // Draw late in the world pass, alongside debug overlays.
+        WorldRenderEvents.BEFORE_DEBUG_RENDER.register(context -> {
             if (!StorageFinder.enabled) {
                 return;
             }
 
             MinecraftClient client = MinecraftClient.getInstance();
-            if (client.world == null || client.player == null) {
+            if (client.world == null || client.player == null || context.matrices() == null) {
                 return;
             }
 
@@ -29,13 +31,16 @@ public final class StorageFinderRenderer {
                     ? Double.POSITIVE_INFINITY
                     : (double) StorageFinder.range * StorageFinder.range;
 
-            var matrices = context.matrices();
             var consumers = context.consumers();
             if (consumers == null) {
                 return;
             }
 
-            var lines = consumers.getBuffer(StorageFinderRenderLayers.THROUGH_WALLS);
+            // The normal line pass makes outlines visible in front of blocks;
+            // the custom no-depth-test pass should also reveal them through walls.
+            var visibleLines = consumers.getBuffer(RenderLayer.getLines());
+            var throughWallLines = consumers.getBuffer(StorageFinderRenderLayers.THROUGH_WALLS);
+
             for (var blockEntity : client.world.getBlockEntities()) {
                 BlockPos pos = blockEntity.getPos();
                 double dx = pos.getX() - center.getX();
@@ -55,18 +60,19 @@ public final class StorageFinderRenderer {
                     continue;
                 }
 
+                double x = pos.getX() - cameraPos.x;
+                double y = pos.getY() - cameraPos.y;
+                double z = pos.getZ() - cameraPos.z;
+
                 VertexRendering.drawOutline(
-                        matrices,
-                        lines,
-                        shape,
-                        pos.getX() - cameraPos.x,
-                        pos.getY() - cameraPos.y,
-                        pos.getZ() - cameraPos.z,
-                        StorageFinder.highlightColor,
-                        2.0F
+                        context.matrices(), visibleLines, shape, x, y, z,
+                        StorageFinder.highlightColor, 2.0F
+                );
+                VertexRendering.drawOutline(
+                        context.matrices(), throughWallLines, shape, x, y, z,
+                        StorageFinder.highlightColor, 2.0F
                 );
             }
-
         });
     }
 }
