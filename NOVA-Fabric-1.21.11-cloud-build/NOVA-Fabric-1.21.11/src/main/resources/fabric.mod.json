@@ -3,6 +3,7 @@
   "schemaVersion": 1,
   "id": "nova",
   "version": "${version}",
+  "accessWidener": "nova.accesswidener",
   "name": "NOVA",
   "description": "NOVA client-side utilities for Fabric.",
   "authors": ["NOVA"],
