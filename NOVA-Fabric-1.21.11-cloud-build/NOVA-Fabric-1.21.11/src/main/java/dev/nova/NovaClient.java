@@ -14,6 +14,8 @@ public final class NovaClient implements ClientModInitializer {
 
     @Override
     public void onInitializeClient() {
+        StorageFinderRenderer.register();
+        
         openGuiKey = KeyBindingHelper.registerKeyBinding(new KeyBinding(
                 "key.nova.open_gui",
                 InputUtil.Type.KEYSYM,
