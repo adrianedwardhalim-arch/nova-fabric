@@ -1,4 +1,3 @@
-
 package dev.nova;
 
 import net.fabricmc.fabric.api.client.rendering.v1.world.WorldRenderEvents;
@@ -10,7 +9,6 @@ import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.Vec3d;
 
 public final class StorageFinderRenderer {
-    private static final int HORIZONTAL_RADIUS = 6;
     private static final int VERTICAL_RADIUS = 4;
 
     private StorageFinderRenderer() {
@@ -37,31 +35,23 @@ public final class StorageFinderRenderer {
                     .getBuffer(RenderLayers.LINES);
 
             BlockPos.Mutable pos = new BlockPos.Mutable();
+            int radius = StorageFinder.range;
 
-            for (int x = -HORIZONTAL_RADIUS;
-                 x <= HORIZONTAL_RADIUS; x++) {
-                for (int y = -VERTICAL_RADIUS;
-                     y <= VERTICAL_RADIUS; y++) {
-                    for (int z = -HORIZONTAL_RADIUS;
-                         z <= HORIZONTAL_RADIUS; z++) {
-
+            for (int x = -radius; x <= radius; x++) {
+                for (int y = -VERTICAL_RADIUS; y <= VERTICAL_RADIUS; y++) {
+                    for (int z = -radius; z <= radius; z++) {
                         pos.set(
                                 center.getX() + x,
                                 center.getY() + y,
                                 center.getZ() + z
                         );
 
-                        BlockState state =
-                                client.world.getBlockState(pos);
-
+                        BlockState state = client.world.getBlockState(pos);
                         if (!StorageFinder.isStorage(state)) {
                             continue;
                         }
 
-                        var shape = state.getOutlineShape(
-                                client.world, pos
-                        );
-
+                        var shape = state.getOutlineShape(client.world, pos);
                         if (shape.isEmpty()) {
                             continue;
                         }
