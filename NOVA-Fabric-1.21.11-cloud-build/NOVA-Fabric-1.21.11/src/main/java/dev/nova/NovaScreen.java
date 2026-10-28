@@ -16,7 +16,7 @@ public final class NovaScreen extends Screen {
         int top = (this.height - 260) / 2;
 
         addDrawableChild(ButtonWidget.builder(
-                storageButtonText(),
+                xrayButtonText(),
                 button -> {
                     StorageFinder.toggle();
                     button.setMessage(storageButtonText());
@@ -49,7 +49,7 @@ public final class NovaScreen extends Screen {
     }
 
     private static Text storageButtonText() {
-        return Text.literal("StorageFinder: "
+        return Text.literal("Base X-Ray (storage): "
                 + (StorageFinder.enabled ? "ON" : "OFF"));
     }
 
