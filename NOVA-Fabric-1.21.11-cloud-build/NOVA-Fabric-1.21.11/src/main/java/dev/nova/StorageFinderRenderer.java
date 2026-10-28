@@ -3,36 +3,36 @@ package dev.nova;
 
 import net.fabricmc.fabric.api.client.rendering.v1.world.WorldRenderEvents;
 import net.minecraft.block.BlockState;
-import net.minecraft.util.hit.BlockHitResult;
+import net.minecraft.client.MinecraftClient;
+import net.minecraft.client.render.state.OutlineRenderState;
 
 public final class StorageFinderRenderer {
     private StorageFinderRenderer() {
     }
 
     public static void register() {
-        WorldRenderEvents.BEFORE_BLOCK_OUTLINE.register((context, hitResult) -> {
-            if (!StorageFinder.enabled) {
-                return true;
-            }
+        WorldRenderEvents.BEFORE_BLOCK_OUTLINE.register(
+                (context, outlineState) -> {
+                    if (!StorageFinder.enabled) {
+                        return true;
+                    }
 
-            if (!(hitResult instanceof BlockHitResult blockHit)) {
-                return true;
-            }
+                    MinecraftClient client = MinecraftClient.getInstance();
 
-            var client = net.minecraft.client.MinecraftClient.getInstance();
+                    if (client.world == null) {
+                        return true;
+                    }
 
-            if (client.world == null) {
-                return true;
-            }
+                    BlockState state = client.world.getBlockState(
+                            outlineState.pos()
+                    );
 
-            BlockState state = client.world.getBlockState(blockHit.getBlockPos());
+                    if (!StorageFinder.isStorage(state)) {
+                        return true;
+                    }
 
-            if (!StorageFinder.isStorage(state)) {
-                return true;
-            }
-
-            return true;
-        });
+                    return true;
+                }
+        );
     }
 }
-
