@@ -8,8 +8,6 @@ import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.Vec3d;
 
 public final class StorageFinderRenderer {
-    private static final int VERTICAL_RADIUS = 4;
-
     private StorageFinderRenderer() {
     }
 
@@ -37,7 +35,7 @@ public final class StorageFinderRenderer {
             int radius = StorageFinder.range;
 
             for (int x = -radius; x <= radius; x++) {
-                for (int y = -VERTICAL_RADIUS; y <= VERTICAL_RADIUS; y++) {
+                for (int y = -radius; y <= radius; y++) {
                     for (int z = -radius; z <= radius; z++) {
                         pos.set(
                                 center.getX() + x,
