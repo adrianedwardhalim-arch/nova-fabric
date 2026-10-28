@@ -11,7 +11,7 @@ public final class StorageFinder {
     // Larger values let the finder inspect storage blocks farther away.
     public static int range = 12;
 
-    private static final int[] RANGES = {8, 12, 16, 20, 24};
+    private static final int[] RANGES = {8, 12, 16, 20, 24, 32};
     private static final int[] COLORS = {
             0xFF9B5CFF,
             0xFF42D9FF,
