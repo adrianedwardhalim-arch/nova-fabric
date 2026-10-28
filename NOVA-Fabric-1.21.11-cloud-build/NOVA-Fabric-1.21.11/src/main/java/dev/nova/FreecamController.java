@@ -129,13 +129,14 @@ public final class FreecamController {
             x -= forwardX;
             z -= forwardZ;
         }
+        // Invert strafe input to match the requested A-left / D-right behavior.
         if (client.options.rightKey.isPressed()) {
-            x += rightX;
-            z += rightZ;
-        }
-        if (client.options.leftKey.isPressed()) {
             x -= rightX;
             z -= rightZ;
+        }
+        if (client.options.leftKey.isPressed()) {
+            x += rightX;
+            z += rightZ;
         }
         if (client.options.jumpKey.isPressed()) {
             y += 1.0;
