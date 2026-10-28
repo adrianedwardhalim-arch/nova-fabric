@@ -1,4 +1,3 @@
-
 package dev.nova;
 
 import net.fabricmc.api.ClientModInitializer;
@@ -11,15 +10,24 @@ import org.lwjgl.glfw.GLFW;
 public final class NovaClient implements ClientModInitializer {
     public static boolean guiEnabled = false;
     private static KeyBinding openGuiKey;
+    private static KeyBinding toggleFreecamKey;
 
     @Override
     public void onInitializeClient() {
         StorageFinderRenderer.register();
+        FreecamController.register();
 
         openGuiKey = KeyBindingHelper.registerKeyBinding(new KeyBinding(
                 "key.nova.open_gui",
                 InputUtil.Type.KEYSYM,
                 GLFW.GLFW_KEY_RIGHT_SHIFT,
+                KeyBinding.Category.MISC
+        ));
+
+        toggleFreecamKey = KeyBindingHelper.registerKeyBinding(new KeyBinding(
+                "key.nova.toggle_freecam",
+                InputUtil.Type.KEYSYM,
+                GLFW.GLFW_KEY_F6,
                 KeyBinding.Category.MISC
         ));
 
@@ -36,6 +44,10 @@ public final class NovaClient implements ClientModInitializer {
                     guiEnabled = true;
                     client.setScreen(new NovaScreen());
                 }
+            }
+
+            while (toggleFreecamKey.wasPressed()) {
+                FreecamController.toggle(client);
             }
         });
     }
