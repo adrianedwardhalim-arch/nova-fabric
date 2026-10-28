@@ -4,6 +4,7 @@ import net.fabricmc.fabric.api.client.rendering.v1.world.WorldRenderEvents;
 import net.minecraft.block.BlockState;
 import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.render.VertexRendering;
+import net.minecraft.client.render.VertexConsumerProvider;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.Vec3d;
 
@@ -66,6 +67,12 @@ public final class StorageFinderRenderer {
                         context.matrices(), throughWallLines, shape, x, y, z,
                         StorageFinder.highlightColor, 2.0F
                 );
+            }
+
+            // Custom render layers are not guaranteed to be flushed by the world renderer.
+            // Submit this layer explicitly while the world-render context is active.
+            if (consumers instanceof VertexConsumerProvider.Immediate immediate) {
+                immediate.draw(StorageFinderRenderLayers.THROUGH_WALLS);
             }
         });
     }
