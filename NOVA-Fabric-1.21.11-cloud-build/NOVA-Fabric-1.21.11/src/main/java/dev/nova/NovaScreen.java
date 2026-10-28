@@ -19,7 +19,7 @@ public final class NovaScreen extends Screen {
                 xrayButtonText(),
                 button -> {
                     StorageFinder.toggle();
-                    button.setMessage(storageButtonText());
+                    button.setMessage(xrayButtonText());
                 }
         ).dimensions(left + 20, top + 65, 260, 22).build());
 
@@ -48,7 +48,7 @@ public final class NovaScreen extends Screen {
         ).dimensions(left + 20, top + 149, 260, 22).build());
     }
 
-    private static Text storageButtonText() {
+    private static Text xrayButtonText() {
         return Text.literal("Base X-Ray (storage): "
                 + (StorageFinder.enabled ? "ON" : "OFF"));
     }
