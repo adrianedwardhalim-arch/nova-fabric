@@ -5,16 +5,21 @@ import com.mojang.blaze3d.platform.DepthTestFunction;
 import net.minecraft.client.gl.RenderPipelines;
 import net.minecraft.client.render.RenderLayer;
 import net.minecraft.client.render.RenderSetup;
+import net.minecraft.client.render.VertexFormats;
 import net.minecraft.util.Identifier;
+import com.mojang.blaze3d.vertex.VertexFormat;
 
 public final class StorageFinderRenderLayers {
-    // Start with Minecraft's own line pipeline so its shader, uniforms,
-    // vertex format, and line-width handling are all configured correctly.
     private static final RenderPipeline THROUGH_WALLS_PIPELINE =
             RenderPipelines.register(
-                    RenderPipeline.builder(RenderPipelines.LINES)
+                    RenderPipeline.builder()
                             .withLocation(Identifier.of(
                                     "nova", "pipeline/storage_finder_lines_through_walls"))
+                            .withVertexShader("core/rendertype_lines")
+                            .withFragmentShader("core/rendertype_lines")
+                            .withVertexFormat(
+                                    VertexFormats.POSITION_COLOR_NORMAL_LINE_WIDTH,
+                                    VertexFormat.DrawMode.LINES)
                             .withDepthTestFunction(DepthTestFunction.NO_DEPTH_TEST)
                             .withDepthWrite(false)
                             .build()
