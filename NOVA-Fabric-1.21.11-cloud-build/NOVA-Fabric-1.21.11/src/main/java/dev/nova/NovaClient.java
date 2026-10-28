@@ -1,42 +1,38 @@
 
 package dev.nova;
 
-import net.fabricmc.api.ClientModInitializer;
-import net.fabricmc.fabric.api.client.event.lifecycle.v1.ClientTickEvents;
-import net.fabricmc.fabric.api.client.keybinding.v1.KeyBindingHelper;
-import net.minecraft.client.option.KeyBinding;
-import net.minecraft.client.util.InputUtil;
-import org.lwjgl.glfw.GLFW;
+import net.fabricmc.fabric.api.client.rendering.v1.world.WorldRenderEvents;
+import net.minecraft.block.BlockState;
+import net.minecraft.client.MinecraftClient;
+import net.minecraft.client.render.state.OutlineRenderState;
 
-public final class NovaClient implements ClientModInitializer {
-    public static boolean guiEnabled = false;
-    private static KeyBinding openGuiKey;
+public final class StorageFinderRenderer {
+    private StorageFinderRenderer() {
+    }
 
-    @Override
-    public void onInitializeClient() {
-        StorageFinderRenderer.register();
-        
-        openGuiKey = KeyBindingHelper.registerKeyBinding(new KeyBinding(
-                "key.nova.open_gui",
-                InputUtil.Type.KEYSYM,
-                GLFW.GLFW_KEY_RIGHT_SHIFT,
-                KeyBinding.Category.MISC
-        ));
+    public static void register() {
+        WorldRenderEvents.BEFORE_BLOCK_OUTLINE.register(
+                (context, outlineState) -> {
+                    if (!StorageFinder.enabled) {
+                        return true;
+                    }
 
-        ClientTickEvents.END_CLIENT_TICK.register(client -> {
-            while (openGuiKey.wasPressed()) {
-                if (client.player == null) {
-                    continue;
+                    MinecraftClient client = MinecraftClient.getInstance();
+
+                    if (client.world == null) {
+                        return true;
+                    }
+
+                    BlockState state = client.world.getBlockState(
+                            outlineState.pos()
+                    );
+
+                    if (!StorageFinder.isStorage(state)) {
+                        return true;
+                    }
+
+                    return true;
                 }
-
-                if (client.currentScreen instanceof NovaScreen) {
-                    client.setScreen(null);
-                    guiEnabled = false;
-                } else {
-                    guiEnabled = true;
-                    client.setScreen(new NovaScreen());
-                }
-            }
-        });
+        );
     }
 }
