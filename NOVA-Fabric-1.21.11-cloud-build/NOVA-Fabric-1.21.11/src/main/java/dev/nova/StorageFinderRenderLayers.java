@@ -10,7 +10,7 @@ import net.minecraft.util.Identifier;
 public final class StorageFinderRenderLayers {
     private static final RenderPipeline THROUGH_WALLS_PIPELINE =
             RenderPipelines.register(
-                    RenderPipeline.builder(RenderPipelines.LINES_SNIPPET)
+                    RenderPipeline.builder(RenderPipelines.RENDERTYPE_LINES_SNIPPET)
                             .withLocation(Identifier.of(
                                     "nova", "pipeline/storage_finder_lines_through_walls"))
                             .withDepthTestFunction(DepthTestFunction.NO_DEPTH_TEST)
