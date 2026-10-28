@@ -1,4 +1,3 @@
-
 package dev.nova;
 
 import net.minecraft.client.gui.DrawContext;
@@ -14,7 +13,7 @@ public final class NovaScreen extends Screen {
     @Override
     protected void init() {
         int left = (this.width - 300) / 2;
-        int top = (this.height - 190) / 2;
+        int top = (this.height - 220) / 2;
 
         addDrawableChild(ButtonWidget.builder(
                 storageButtonText(),
@@ -23,11 +22,24 @@ public final class NovaScreen extends Screen {
                     button.setMessage(storageButtonText());
                 }
         ).dimensions(left + 20, top + 65, 260, 22).build());
+
+        addDrawableChild(ButtonWidget.builder(
+                freecamButtonText(),
+                button -> {
+                    FreecamController.toggle(client);
+                    button.setMessage(freecamButtonText());
+                }
+        ).dimensions(left + 20, top + 95, 260, 22).build());
     }
 
     private static Text storageButtonText() {
         return Text.literal("StorageFinder: "
                 + (StorageFinder.enabled ? "ON" : "OFF"));
+    }
+
+    private static Text freecamButtonText() {
+        return Text.literal("Freecam: "
+                + (FreecamController.isEnabled() ? "ON" : "OFF"));
     }
 
     @Override
@@ -38,7 +50,7 @@ public final class NovaScreen extends Screen {
             float delta
     ) {
         int panelWidth = 300;
-        int panelHeight = 190;
+        int panelHeight = 220;
         int left = (this.width - panelWidth) / 2;
         int top = (this.height - panelHeight) / 2;
 
@@ -56,11 +68,14 @@ public final class NovaScreen extends Screen {
         context.fill(left + 16, top + 55,
                 left + panelWidth - 16, top + 56, 0xFF39264E);
 
-        context.drawText(this.textRenderer, "Freecam",
-                left + 18, top + 108, 0xFFFFFFFF, false);
+        context.drawText(this.textRenderer, "Freecam controls: F6",
+                left + 20, top + 130, 0xFFB9ADC8, false);
         context.drawText(this.textRenderer,
-                "Camera feature not implemented yet",
-                left + 18, top + 124, 0xFFB9ADC8, false);
+                "WASD move, Space up, Shift down",
+                left + 20, top + 146, 0xFFB9ADC8, false);
+        context.drawText(this.textRenderer,
+                "Sprint key moves faster",
+                left + 20, top + 162, 0xFFB9ADC8, false);
         context.drawText(this.textRenderer,
                 "Right Shift / Esc to close",
                 left + 18, top + panelHeight - 22,
