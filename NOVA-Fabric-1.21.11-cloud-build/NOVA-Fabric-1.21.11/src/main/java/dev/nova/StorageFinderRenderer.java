@@ -3,7 +3,6 @@ package dev.nova;
 import net.fabricmc.fabric.api.client.rendering.v1.world.WorldRenderEvents;
 import net.minecraft.block.BlockState;
 import net.minecraft.client.MinecraftClient;
-import net.minecraft.client.render.RenderLayers;
 import net.minecraft.client.render.VertexRendering;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.Vec3d;
@@ -32,7 +31,7 @@ public final class StorageFinderRenderer {
 
             var matrices = context.matrices();
             var lines = context.consumers()
-                    .getBuffer(RenderLayers.LINES);
+                    .getBuffer(StorageFinderRenderLayers.THROUGH_WALLS);
 
             BlockPos.Mutable pos = new BlockPos.Mutable();
             int radius = StorageFinder.range;
