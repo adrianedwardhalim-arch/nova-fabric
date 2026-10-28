@@ -13,8 +13,9 @@ public final class StorageFinderRenderer {
     }
 
     public static void register() {
-        // Draw late in the world pass, alongside debug overlays.
-        WorldRenderEvents.BEFORE_DEBUG_RENDER.register(context -> {
+        // Draw after entities/block entities, while the world render consumer is still available.
+        // BEFORE_DEBUG_RENDER is too late in 1.21.11: context.consumers() is null there.
+        WorldRenderEvents.AFTER_ENTITIES.register(context -> {
             if (!StorageFinder.enabled) {
                 return;
             }
