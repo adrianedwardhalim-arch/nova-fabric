@@ -54,8 +54,6 @@ public final class FreecamController {
         camera.setPitch(client.player.getPitch());
         camera.setHeadYaw(client.player.getYaw());
         camera.setBodyYaw(client.player.getYaw());
-        camera.prevYaw = camera.getYaw();
-        camera.prevPitch = camera.getPitch();
 
         // Add it to the client world so Minecraft updates its previous/current
         // positions each tick. An unspawned camera entity can interpolate from
@@ -113,8 +111,6 @@ public final class FreecamController {
         // The detached camera is not the entity receiving mouse input.
         // Copy the player's look angles and align the previous angles too,
         // avoiding interpolation lag that can make mouse-look feel stuck.
-        cameraEntity.prevYaw = cameraEntity.getYaw();
-        cameraEntity.prevPitch = cameraEntity.getPitch();
 
         double yaw = Math.toRadians(cameraEntity.getYaw());
 
