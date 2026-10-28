@@ -4,7 +4,7 @@ package dev.nova;
 import net.fabricmc.fabric.api.client.rendering.v1.world.WorldRenderEvents;
 import net.minecraft.block.BlockState;
 import net.minecraft.client.MinecraftClient;
-import net.minecraft.client.render.RenderLayer;
+import net.minecraft.client.render.RenderLayers;
 import net.minecraft.client.render.VertexRendering;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.Vec3d;
@@ -29,12 +29,12 @@ public final class StorageFinderRenderer {
             }
 
             var camera = client.gameRenderer.getCamera();
-            Vec3d cameraPos = camera.getPos();
+            Vec3d cameraPos = camera.getCameraPos();
             BlockPos center = camera.getBlockPos();
 
             var matrices = context.matrices();
             var lines = context.consumers()
-                    .getBuffer(RenderLayer.getLines());
+                    .getBuffer(RenderLayers.LINES);
 
             BlockPos.Mutable pos = new BlockPos.Mutable();
 
