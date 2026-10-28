@@ -1,83 +1,35 @@
 
 package dev.nova;
 
-import net.minecraft.client.gui.DrawContext;
-import net.minecraft.client.gui.screen.Screen;
-import net.minecraft.client.gui.widget.ButtonWidget;
-import net.minecraft.text.Text;
+import net.minecraft.block.Block;
+import net.minecraft.block.Blocks;
+import net.minecraft.block.BlockState;
+import net.minecraft.block.ShulkerBoxBlock;
 
-public final class NovaScreen extends Screen {
-    public NovaScreen() {
-        super(Text.literal("NOVA"));
+public final class StorageFinder {
+    public static boolean enabled = false;
+
+    public static int highlightColor = 0xFF9B5CFF;
+
+    private StorageFinder() {
     }
 
-    @Override
-    protected void init() {
-        int panelWidth = 300;
-        int left = (this.width - panelWidth) / 2;
-        int top = (this.height - 190) / 2;
+    public static boolean isStorage(BlockState state) {
+        Block block = state.getBlock();
 
-        addDrawableChild(ButtonWidget.builder(
-                storageButtonText(),
-                button -> {
-                    StorageFinder.toggle();
-                    button.setMessage(storageButtonText());
-                }
-        ).dimensions(left + 20, top + 65, 260, 22).build());
+        if (block == Blocks.TRAPPED_CHEST) {
+            return false;
+        }
+
+        return block == Blocks.CHEST
+                || block instanceof ShulkerBoxBlock
+                || block == Blocks.BARREL
+                || block == Blocks.DROPPER
+                || block == Blocks.DISPENSER
+                || block == Blocks.HOPPER;
     }
 
-    private static Text storageButtonText() {
-        return Text.literal("StorageFinder: "
-                + (StorageFinder.enabled ? "ON" : "OFF"));
-    }
-
-    @Override
-    public void render(
-            DrawContext context,
-            int mouseX,
-            int mouseY,
-            float delta
-    ) {
-        int panelWidth = 300;
-        int panelHeight = 190;
-        int left = (this.width - panelWidth) / 2;
-        int top = (this.height - panelHeight) / 2;
-
-        context.fill(0, 0, this.width, this.height, 0x9906000D);
-        context.fill(left, top, left + panelWidth,
-                top + panelHeight, 0xFF100B18);
-        context.fill(left, top, left + panelWidth,
-                top + 3, 0xFF9B5CFF);
-
-        context.drawText(this.textRenderer, "N O V A",
-                left + 18, top + 16, 0xFFD7B8FF, false);
-        context.drawText(this.textRenderer, "CLIENT MENU",
-                left + 18, top + 34, 0xFF9A8AAE, false);
-
-        context.fill(left + 16, top + 55,
-                left + panelWidth - 16, top + 56, 0xFF39264E);
-
-        context.drawText(this.textRenderer, "Freecam",
-                left + 18, top + 108, 0xFFFFFFFF, false);
-        context.drawText(this.textRenderer,
-                "Camera feature not implemented yet",
-                left + 18, top + 124, 0xFFB9ADC8, false);
-        context.drawText(this.textRenderer,
-                "Right Shift / Esc to close",
-                left + 18, top + panelHeight - 22,
-                0xFF9A8AAE, false);
-
-        super.render(context, mouseX, mouseY, delta);
-    }
-
-    @Override
-    public boolean shouldPause() {
-        return false;
-    }
-
-    @Override
-    public void close() {
-        NovaClient.guiEnabled = false;
-        super.close();
+    public static void toggle() {
+        enabled = !enabled;
     }
 }
