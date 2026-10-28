@@ -12,9 +12,7 @@ public final class StorageFinderRenderer {
     }
 
     public static void register() {
-        // Draw after normal entities so the custom no-depth-test line layer is
-        // placed late in the world render pass and can show through solid blocks.
-        WorldRenderEvents.AFTER_ENTITIES.register(context -> {
+        WorldRenderEvents.LAST.register(context -> {
             if (!StorageFinder.enabled) {
                 return;
             }
@@ -32,18 +30,17 @@ public final class StorageFinderRenderer {
                     : (double) StorageFinder.range * StorageFinder.range;
 
             var matrices = context.matrices();
-            var lines = context.consumers()
-                    .getBuffer(StorageFinderRenderLayers.THROUGH_WALLS);
+            var consumers = context.consumers();
+            if (consumers == null) {
+                return;
+            }
 
-            // Every storage type supported by NOVA is a block entity. Scanning
-            // loaded block entities avoids thousands of redundant block lookups
-            // each frame and makes Unlimited mean all storage in loaded chunks.
+            var lines = consumers.getBuffer(StorageFinderRenderLayers.THROUGH_WALLS);
             for (var blockEntity : client.world.getBlockEntities()) {
                 BlockPos pos = blockEntity.getPos();
-
-                double dx = (pos.getX() + 0.5) - (center.getX() + 0.5);
-                double dy = (pos.getY() + 0.5) - (center.getY() + 0.5);
-                double dz = (pos.getZ() + 0.5) - (center.getZ() + 0.5);
+                double dx = pos.getX() - center.getX();
+                double dy = pos.getY() - center.getY();
+                double dz = pos.getZ() - center.getZ();
                 if (dx * dx + dy * dy + dz * dz > maxDistanceSquared) {
                     continue;
                 }
@@ -69,6 +66,8 @@ public final class StorageFinderRenderer {
                         2.0F
                 );
             }
+
+            consumers.draw(StorageFinderRenderLayers.THROUGH_WALLS);
         });
     }
 }
