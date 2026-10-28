@@ -3,6 +3,7 @@ package dev.nova;
 import net.fabricmc.fabric.api.client.event.lifecycle.v1.ClientTickEvents;
 import net.minecraft.client.MinecraftClient;
 import net.minecraft.entity.EntityType;
+import net.minecraft.entity.SpawnReason;
 import net.minecraft.entity.decoration.ArmorStandEntity;
 import net.minecraft.util.math.Vec3d;
 
@@ -35,12 +36,13 @@ public final class FreecamController {
             return;
         }
 
-        ArmorStandEntity camera = EntityType.ARMOR_STAND.create(client.world);
+        ArmorStandEntity camera = EntityType.ARMOR_STAND.create(client.world, SpawnReason.TRIGGERED);
         if (camera == null) {
             return;
         }
 
-        playerAnchor = client.player.getPos();
+        playerAnchor = new Vec3d(client.player.getX(),
+                client.player.getY(), client.player.getZ());
         camera.setInvisible(true);
         camera.setNoGravity(true);
         camera.setPosition(client.player.getX(), client.player.getY(),
