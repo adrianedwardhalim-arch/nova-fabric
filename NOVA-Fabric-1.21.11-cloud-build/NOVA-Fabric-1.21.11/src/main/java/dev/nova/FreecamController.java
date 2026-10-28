@@ -85,6 +85,10 @@ public final class FreecamController {
         player.setPosition(playerAnchor.x, playerAnchor.y, playerAnchor.z);
         player.setVelocity(Vec3d.ZERO);
 
+        // Mouse-look is handled by the player; mirror it to the detached camera.
+        cameraEntity.setYaw(player.getYaw());
+        cameraEntity.setPitch(player.getPitch());
+
         double yaw = Math.toRadians(cameraEntity.getYaw());
         double forwardX = -Math.sin(yaw);
         double forwardZ = Math.cos(yaw);
