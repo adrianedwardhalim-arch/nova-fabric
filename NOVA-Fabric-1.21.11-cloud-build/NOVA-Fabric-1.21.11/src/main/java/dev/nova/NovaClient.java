@@ -1,3 +1,4 @@
+
 package dev.nova;
 
 import net.fabricmc.api.ClientModInitializer;
@@ -22,11 +23,16 @@ public final class NovaClient implements ClientModInitializer {
 
         ClientTickEvents.END_CLIENT_TICK.register(client -> {
             while (openGuiKey.wasPressed()) {
-                guiEnabled = !guiEnabled;
-                if (guiEnabled && client.player != null) {
-                    client.setScreen(new NovaScreen());
-                } else if (client.currentScreen instanceof NovaScreen) {
+                if (client.player == null) {
+                    continue;
+                }
+
+                if (client.currentScreen instanceof NovaScreen) {
                     client.setScreen(null);
+                    guiEnabled = false;
+                } else {
+                    guiEnabled = true;
+                    client.setScreen(new NovaScreen());
                 }
             }
         });
