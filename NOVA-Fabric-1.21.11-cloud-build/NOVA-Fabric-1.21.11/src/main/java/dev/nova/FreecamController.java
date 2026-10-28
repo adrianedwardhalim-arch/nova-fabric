@@ -102,16 +102,9 @@ public final class FreecamController {
         player.setPosition(playerAnchor.x, playerAnchor.y, playerAnchor.z);
         player.setVelocity(Vec3d.ZERO);
 
-        // Keep mouse-look responsive while detached.
-        cameraEntity.setYaw(player.getYaw());
-        cameraEntity.setPitch(player.getPitch());
-        cameraEntity.setHeadYaw(player.getYaw());
-        cameraEntity.setBodyYaw(player.getYaw());
-
-        // The detached camera is not the entity receiving mouse input.
-        // Copy the player's look angles and align the previous angles too,
-        // avoiding interpolation lag that can make mouse-look feel stuck.
-
+        // The camera entity is the active view entity, so let Minecraft's
+        // mouse-look update its yaw and pitch directly. Do not overwrite those
+        // angles with the stationary player's rotation every tick.
         double yaw = Math.toRadians(cameraEntity.getYaw());
 
         // Invert the old forward vector: it made W/S feel backwards in-game.
