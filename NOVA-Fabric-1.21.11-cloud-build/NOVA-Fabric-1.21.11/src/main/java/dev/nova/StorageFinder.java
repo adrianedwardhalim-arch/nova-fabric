@@ -8,10 +8,10 @@ import net.minecraft.block.ShulkerBoxBlock;
 public final class StorageFinder {
     public static boolean enabled = false;
     public static int highlightColor = 0xFF9B5CFF;
-    // Larger values let the finder inspect storage blocks farther away.
+    // -1 means scan the full client render distance (all currently loaded area).
     public static int range = 12;
 
-    private static final int[] RANGES = {8, 12, 16, 20, 24, 32};
+    private static final int[] RANGES = {8, 12, 16, 20, 24, 32, -1};
     private static final int[] COLORS = {
             0xFF9B5CFF,
             0xFF42D9FF,
