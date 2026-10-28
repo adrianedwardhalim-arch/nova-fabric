@@ -1,4 +1,4 @@
 accessWidener v2 named
 accessible method net/minecraft/client/gl/RenderPipelines register (Lcom/mojang/blaze3d/pipeline/RenderPipeline;)Lcom/mojang/blaze3d/pipeline/RenderPipeline;
 accessible method net/minecraft/client/render/RenderLayer of (Ljava/lang/String;Lnet/minecraft/client/render/RenderSetup;)Lnet/minecraft/client/render/RenderLayer;
-accessible field net/minecraft/client/gl/RenderPipelines LINES_SNIPPET Lcom/mojang/blaze3d/pipeline/RenderPipeline$Snippet;
+accessible field net/minecraft/client/gl/RenderPipelines RENDERTYPE_LINES_SNIPPET Lcom/mojang/blaze3d/pipeline/RenderPipeline$Snippet;
