@@ -21,6 +21,7 @@ public final class StorageFinder {
         }
 
         return block == Blocks.CHEST
+                || block == Blocks.ENDER_CHEST
                 || block instanceof ShulkerBoxBlock
                 || block == Blocks.BARREL
                 || block == Blocks.DROPPER
