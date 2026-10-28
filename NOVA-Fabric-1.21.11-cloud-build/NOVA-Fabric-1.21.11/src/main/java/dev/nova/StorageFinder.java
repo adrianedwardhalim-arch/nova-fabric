@@ -8,7 +8,6 @@ import net.minecraft.block.ShulkerBoxBlock;
 
 public final class StorageFinder {
     public static boolean enabled = false;
-
     public static int highlightColor = 0xFF9B5CFF;
 
     private StorageFinder() {
