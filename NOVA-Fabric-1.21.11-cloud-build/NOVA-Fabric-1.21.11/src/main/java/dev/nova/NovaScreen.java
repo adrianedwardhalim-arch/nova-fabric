@@ -54,7 +54,7 @@ public final class NovaScreen extends Screen {
     }
 
     private static Text rangeButtonText() {
-        return Text.literal("Storage range: " + StorageFinder.range + " blocks");
+        return Text.literal("Storage range: " + (StorageFinder.range == -1 ? "Unlimited" : StorageFinder.range + " blocks"));
     }
 
     private static Text colorButtonText() {
