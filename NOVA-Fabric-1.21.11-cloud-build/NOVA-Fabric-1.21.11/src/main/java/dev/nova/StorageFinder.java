@@ -8,8 +8,10 @@ import net.minecraft.block.ShulkerBoxBlock;
 public final class StorageFinder {
     public static boolean enabled = false;
     public static int highlightColor = 0xFF9B5CFF;
-    public static int range = 6;
+    // Larger values let the finder inspect storage blocks farther away.
+    public static int range = 12;
 
+    private static final int[] RANGES = {8, 12, 16, 20, 24};
     private static final int[] COLORS = {
             0xFF9B5CFF,
             0xFF42D9FF,
@@ -19,6 +21,7 @@ public final class StorageFinder {
     private static final String[] COLOR_NAMES = {
             "Purple", "Cyan", "Green", "Gold"
     };
+    private static int rangeIndex = 1;
     private static int colorIndex = 0;
 
     private StorageFinder() {
@@ -45,7 +48,8 @@ public final class StorageFinder {
     }
 
     public static void cycleRange() {
-        range = range >= 12 ? 4 : range + 2;
+        rangeIndex = (rangeIndex + 1) % RANGES.length;
+        range = RANGES[rangeIndex];
     }
 
     public static void cycleColor() {
