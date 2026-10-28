@@ -2,6 +2,7 @@ package dev.nova;
 
 import net.fabricmc.fabric.api.client.event.lifecycle.v1.ClientTickEvents;
 import net.minecraft.client.MinecraftClient;
+import net.minecraft.entity.Entity;
 import net.minecraft.entity.EntityType;
 import net.minecraft.entity.SpawnReason;
 import net.minecraft.entity.decoration.ArmorStandEntity;
@@ -36,19 +37,26 @@ public final class FreecamController {
             return;
         }
 
-        ArmorStandEntity camera = EntityType.ARMOR_STAND.create(client.world, SpawnReason.TRIGGERED);
+        ArmorStandEntity camera = EntityType.ARMOR_STAND.create(
+                client.world, SpawnReason.TRIGGERED);
         if (camera == null) {
             return;
         }
 
         playerAnchor = new Vec3d(client.player.getX(),
                 client.player.getY(), client.player.getZ());
+
         camera.setInvisible(true);
         camera.setNoGravity(true);
         camera.setPosition(client.player.getX(), client.player.getY(),
                 client.player.getZ());
         camera.setYaw(client.player.getYaw());
         camera.setPitch(client.player.getPitch());
+
+        // Add it to the client world so Minecraft updates its previous/current
+        // positions each tick. An unspawned camera entity can interpolate from
+        // stale coordinates and make the view flicker or jump underground.
+        client.world.addEntity(camera);
 
         cameraEntity = camera;
         enabled = true;
@@ -63,6 +71,11 @@ public final class FreecamController {
             }
             client.player.setVelocity(Vec3d.ZERO);
             client.setCameraEntity(client.player);
+        }
+
+        if (client.world != null && cameraEntity != null) {
+            client.world.removeEntity(cameraEntity.getId(),
+                    Entity.RemovalReason.DISCARDED);
         }
 
         cameraEntity = null;
@@ -82,16 +95,20 @@ public final class FreecamController {
         }
 
         var player = client.player;
+
+        // Keep the real player stationary while the camera moves independently.
         player.setPosition(playerAnchor.x, playerAnchor.y, playerAnchor.z);
         player.setVelocity(Vec3d.ZERO);
 
-        // Mouse-look is handled by the player; mirror it to the detached camera.
+        // Keep mouse-look responsive while detached.
         cameraEntity.setYaw(player.getYaw());
         cameraEntity.setPitch(player.getPitch());
 
         double yaw = Math.toRadians(cameraEntity.getYaw());
-        double forwardX = -Math.sin(yaw);
-        double forwardZ = Math.cos(yaw);
+
+        // Invert the old forward vector: it made W/S feel backwards in-game.
+        double forwardX = Math.sin(yaw);
+        double forwardZ = -Math.cos(yaw);
         double rightX = Math.cos(yaw);
         double rightZ = Math.sin(yaw);
 
@@ -129,6 +146,7 @@ public final class FreecamController {
             x = x / length * speed;
             y = y / length * speed;
             z = z / length * speed;
+
             cameraEntity.setPosition(
                     cameraEntity.getX() + x,
                     cameraEntity.getY() + y,
