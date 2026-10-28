@@ -83,10 +83,7 @@ public final class FreecamController {
         player.setPosition(playerAnchor.x, playerAnchor.y, playerAnchor.z);
         player.setVelocity(Vec3d.ZERO);
 
-        cameraEntity.setYaw(player.getYaw());
-        cameraEntity.setPitch(player.getPitch());
-
-        double yaw = Math.toRadians(player.getYaw());
+        double yaw = Math.toRadians(cameraEntity.getYaw());
         double forwardX = -Math.sin(yaw);
         double forwardZ = Math.cos(yaw);
         double rightX = Math.cos(yaw);
