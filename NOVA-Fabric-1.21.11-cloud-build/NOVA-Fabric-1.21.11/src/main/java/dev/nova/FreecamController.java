@@ -102,9 +102,13 @@ public final class FreecamController {
         player.setPosition(playerAnchor.x, playerAnchor.y, playerAnchor.z);
         player.setVelocity(Vec3d.ZERO);
 
-        // The camera entity is the active view entity, so let Minecraft's
-        // mouse-look update its yaw and pitch directly. Do not overwrite those
-        // angles with the stationary player's rotation every tick.
+        // Minecraft's mouse-look updates the player rotation. Mirror it to
+        // the detached camera each tick so Freecam can rotate normally.
+        cameraEntity.setYaw(player.getYaw());
+        cameraEntity.setPitch(player.getPitch());
+        cameraEntity.setHeadYaw(player.getYaw());
+        cameraEntity.setBodyYaw(player.getYaw());
+
         double yaw = Math.toRadians(cameraEntity.getYaw());
 
         // Invert the old forward vector: it made W/S feel backwards in-game.
