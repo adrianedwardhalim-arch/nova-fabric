@@ -67,7 +67,6 @@ public final class StorageFinderRenderer {
                 );
             }
 
-            consumers.draw(StorageFinderRenderLayers.THROUGH_WALLS);
         });
     }
 }
