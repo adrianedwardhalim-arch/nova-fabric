@@ -12,7 +12,7 @@ public final class StorageFinderRenderer {
     }
 
     public static void register() {
-        WorldRenderEvents.LAST.register(context -> {
+        WorldRenderEvents.AFTER_ENTITIES.register(context -> {
             if (!StorageFinder.enabled) {
                 return;
             }
