@@ -115,8 +115,8 @@ public final class FreecamController {
         double yaw = Math.toRadians(cameraEntity.getYaw());
 
         // Invert the old forward vector: it made W/S feel backwards in-game.
-        double forwardX = Math.sin(yaw);
-        double forwardZ = -Math.cos(yaw);
+        double forwardX = -Math.sin(yaw);
+        double forwardZ = Math.cos(yaw);
         double rightX = Math.cos(yaw);
         double rightZ = Math.sin(yaw);
 
