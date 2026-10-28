@@ -3,7 +3,6 @@ package dev.nova;
 import net.fabricmc.fabric.api.client.rendering.v1.world.WorldRenderEvents;
 import net.minecraft.block.BlockState;
 import net.minecraft.client.MinecraftClient;
-import net.minecraft.client.render.RenderLayer;
 import net.minecraft.client.render.VertexRendering;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.Vec3d;
@@ -36,9 +35,8 @@ public final class StorageFinderRenderer {
                 return;
             }
 
-            // The normal line pass makes outlines visible in front of blocks;
-            // the custom no-depth-test pass should also reveal them through walls.
-            var visibleLines = consumers.getBuffer(RenderLayer.getLines());
+            // Use the custom line layer with depth testing disabled so the outlines
+            // are not hidden by solid blocks.
             var throughWallLines = consumers.getBuffer(StorageFinderRenderLayers.THROUGH_WALLS);
 
             for (var blockEntity : client.world.getBlockEntities()) {
@@ -64,10 +62,6 @@ public final class StorageFinderRenderer {
                 double y = pos.getY() - cameraPos.y;
                 double z = pos.getZ() - cameraPos.z;
 
-                VertexRendering.drawOutline(
-                        context.matrices(), visibleLines, shape, x, y, z,
-                        StorageFinder.highlightColor, 2.0F
-                );
                 VertexRendering.drawOutline(
                         context.matrices(), throughWallLines, shape, x, y, z,
                         StorageFinder.highlightColor, 2.0F
