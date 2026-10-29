@@ -23,7 +23,6 @@ import net.minecraft.client.util.BufferAllocator;
 import net.minecraft.util.Identifier;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.Vec3d;
-import net.minecraft.util.math.Box;
 import org.joml.Matrix4f;
 import org.joml.Vector3f;
 import org.joml.Vector4f;
@@ -44,27 +43,27 @@ public final class StorageFinderRenderer {
     private static final Matrix4f TEXTURE_MATRIX = new Matrix4f();
     private static MappableRingBuffer vertexBuffer;
 
-    private StorageFinderRenderer() {
-    }
+    private StorageFinderRenderer() {}
 
     public static void register() {
-        // 1.21.11 splits world rendering into extraction and drawing phases.
-        // Draw directly into the main framebuffer with a no-depth-test pipeline;
-        // this avoids the debug-gizmo collector and buffered layer paths.
         WorldRenderEvents.BEFORE_TRANSLUCENT.register(StorageFinderRenderer::render);
     }
 
     private static void render(WorldRenderContext context) {
         MinecraftClient client = MinecraftClient.getInstance();
-        if (!StorageFinder.enabled || client.world == null || client.player == null) {
-            return;
-        }
+        if (!StorageFinder.enabled || client.world == null || client.player == null) return;
 
         Vec3d camera = client.gameRenderer.getCamera().getCameraPos();
-        BlockPos center = BlockPos.ofFloored(camera.x, camera.y, camera.z);
         double maxDistanceSquared = StorageFinder.range == -1
                 ? Double.POSITIVE_INFINITY
                 : (double) StorageFinder.range * StorageFinder.range;
+
+        // Use the render event's matrix stack, as Fabric's 1.21.11 custom-pipeline
+        // example does, instead of manually subtracting the camera from every vertex.
+        var matrices = context.matrices();
+        matrices.push();
+        matrices.translate(-camera.x, -camera.y, -camera.z);
+        Matrix4f positionMatrix = matrices.peek().getPositionMatrix();
 
         BufferBuilder builder = new BufferBuilder(
                 ALLOCATOR,
@@ -79,22 +78,16 @@ public final class StorageFinderRenderer {
             double dx = pos.getX() + 0.5 - camera.x;
             double dy = pos.getY() + 0.5 - camera.y;
             double dz = pos.getZ() + 0.5 - camera.z;
-            if (dx * dx + dy * dy + dz * dz > maxDistanceSquared) {
-                continue;
-            }
-            if (!StorageFinder.isStorage(client.world.getBlockState(pos))) {
-                continue;
-            }
-
-            appendBox(builder, new Box(pos), camera, color);
+            if (dx * dx + dy * dy + dz * dz > maxDistanceSquared) continue;
+            if (!StorageFinder.isStorage(client.world.getBlockState(pos))) continue;
+            appendBox(builder, positionMatrix, pos, color);
             count++;
         }
+        matrices.pop();
 
         if (count == 0) {
             BuiltBuffer empty = builder.endNullable();
-            if (empty != null) {
-                empty.close();
-            }
+            if (empty != null) empty.close();
             ALLOCATOR.clear();
             return;
         }
@@ -104,36 +97,27 @@ public final class StorageFinderRenderer {
         ALLOCATOR.clear();
     }
 
-    private static void appendBox(BufferBuilder builder, Box box, Vec3d camera, int color) {
-        float x0 = (float) (box.minX - camera.x);
-        float y0 = (float) (box.minY - camera.y);
-        float z0 = (float) (box.minZ - camera.z);
-        float x1 = (float) (box.maxX - camera.x);
-        float y1 = (float) (box.maxY - camera.y);
-        float z1 = (float) (box.maxZ - camera.z);
-
-        // Twelve edges. Each line is submitted as a pair of vertices.
-        line(builder, x0, y0, z0, x1, y0, z0, color, 0, 0, 1);
-        line(builder, x0, y0, z1, x1, y0, z1, color, 0, 0, 1);
-        line(builder, x0, y1, z0, x1, y1, z0, color, 0, 0, 1);
-        line(builder, x0, y1, z1, x1, y1, z1, color, 0, 0, 1);
-
-        line(builder, x0, y0, z0, x0, y1, z0, color, 1, 0, 0);
-        line(builder, x1, y0, z0, x1, y1, z0, color, 1, 0, 0);
-        line(builder, x0, y0, z1, x0, y1, z1, color, 1, 0, 0);
-        line(builder, x1, y0, z1, x1, y1, z1, color, 1, 0, 0);
-
-        line(builder, x0, y0, z0, x0, y0, z1, color, 0, 1, 0);
-        line(builder, x1, y0, z0, x1, y0, z1, color, 0, 1, 0);
-        line(builder, x0, y1, z0, x0, y1, z1, color, 0, 1, 0);
-        line(builder, x1, y1, z0, x1, y1, z1, color, 0, 1, 0);
+    private static void appendBox(BufferBuilder b, Matrix4f m, BlockPos p, int color) {
+        float x=p.getX(), y=p.getY(), z=p.getZ(), X=x+1, Y=y+1, Z=z+1;
+        line(b,m,x,y,z,X,y,z,color,0,0,1);
+        line(b,m,x,y,Z,X,y,Z,color,0,0,1);
+        line(b,m,x,Y,z,X,Y,z,color,0,0,1);
+        line(b,m,x,Y,Z,X,Y,Z,color,0,0,1);
+        line(b,m,x,y,z,x,Y,z,color,1,0,0);
+        line(b,m,X,y,z,X,Y,z,color,1,0,0);
+        line(b,m,x,y,Z,x,Y,Z,color,1,0,0);
+        line(b,m,X,y,Z,X,Y,Z,color,1,0,0);
+        line(b,m,x,y,z,x,y,Z,color,0,1,0);
+        line(b,m,X,y,z,X,y,Z,color,0,1,0);
+        line(b,m,x,Y,z,x,Y,Z,color,0,1,0);
+        line(b,m,X,Y,z,X,Y,Z,color,0,1,0);
     }
 
-    private static void line(BufferBuilder builder, float x0, float y0, float z0,
-                             float x1, float y1, float z1, int color,
-                             float nx, float ny, float nz) {
-        builder.vertex(x0, y0, z0).color(color).normal(nx, ny, nz);
-        builder.vertex(x1, y1, z1).color(color).normal(nx, ny, nz);
+    private static void line(BufferBuilder b, Matrix4f m,
+                             float x0,float y0,float z0,float x1,float y1,float z1,
+                             int color,float nx,float ny,float nz) {
+        b.vertex(m,x0,y0,z0).color(color).normal(nx,ny,nz);
+        b.vertex(m,x1,y1,z1).color(color).normal(nx,ny,nz);
     }
 
     private static void draw(MinecraftClient client, BuiltBuffer built) {
@@ -141,11 +125,8 @@ public final class StorageFinderRenderer {
             BuiltBuffer.DrawParameters parameters = built.getDrawParameters();
             VertexFormat format = parameters.format();
             int byteCount = parameters.vertexCount() * format.getVertexSize();
-
             if (vertexBuffer == null || vertexBuffer.size() < byteCount) {
-                if (vertexBuffer != null) {
-                    vertexBuffer.close();
-                }
+                if (vertexBuffer != null) vertexBuffer.close();
                 vertexBuffer = new MappableRingBuffer(
                         () -> "NOVA StorageFinder vertex buffer",
                         GpuBuffer.USAGE_VERTEX | GpuBuffer.USAGE_MAP_WRITE,
@@ -165,7 +146,6 @@ public final class StorageFinderRenderer {
             GpuBufferSlice transforms = RenderSystem.getDynamicUniforms().write(
                     RenderSystem.getModelViewMatrix(), COLOR_MODULATOR, MODEL_OFFSET, TEXTURE_MATRIX
             );
-
             var framebuffer = client.getFramebuffer();
             try (RenderPass pass = RenderSystem.getDevice().createCommandEncoder().createRenderPass(
                     () -> "NOVA StorageFinder through-wall outlines",
@@ -178,7 +158,6 @@ public final class StorageFinderRenderer {
                 pass.setIndexBuffer(indices.getIndexBuffer(parameters.indexCount()), indices.getIndexType());
                 pass.drawIndexed(0, 0, parameters.indexCount(), 1);
             }
-
             vertexBuffer.rotate();
         }
     }
