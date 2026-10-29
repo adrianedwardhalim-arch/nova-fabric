@@ -46,7 +46,9 @@ public final class StorageFinderRenderer {
     private StorageFinderRenderer() {}
 
     public static void register() {
-        WorldRenderEvents.BEFORE_TRANSLUCENT.register(StorageFinderRenderer::render);
+        // Match the working run #21 render stage so outlines are drawn after world geometry.
+        // The custom pipeline disables depth testing, allowing outlines to show through walls.
+        WorldRenderEvents.BEFORE_DEBUG_RENDER.register(StorageFinderRenderer::render);
     }
 
     private static void render(WorldRenderContext context) {
