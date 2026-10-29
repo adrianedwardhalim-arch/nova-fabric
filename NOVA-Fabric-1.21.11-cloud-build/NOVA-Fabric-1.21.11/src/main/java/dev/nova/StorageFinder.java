@@ -8,7 +8,7 @@ import net.minecraft.block.ShulkerBoxBlock;
 public final class StorageFinder {
     public static boolean enabled = false;
     public static int highlightColor = 0xFF9B5CFF;
-    // -1 means scan the full client render distance (all currently loaded area).
+    // -1 means scan all currently loaded chunks.
     public static int range = 12;
 
     private static final int[] RANGES = {8, 12, 16, 20, 24, 32, -1};
@@ -27,6 +27,10 @@ public final class StorageFinder {
     private StorageFinder() {
     }
 
+    /**
+     * Blocks the StorageFinder outlines through walls.
+     * Trapped chests are intentionally excluded.
+     */
     public static boolean isStorage(BlockState state) {
         Block block = state.getBlock();
 
@@ -38,9 +42,16 @@ public final class StorageFinder {
                 || block == Blocks.ENDER_CHEST
                 || block instanceof ShulkerBoxBlock
                 || block == Blocks.BARREL
+                || block == Blocks.HOPPER
                 || block == Blocks.DROPPER
                 || block == Blocks.DISPENSER
-                || block == Blocks.HOPPER;
+                // Other useful containers that can reveal a base or storage room.
+                || block == Blocks.FURNACE
+                || block == Blocks.BLAST_FURNACE
+                || block == Blocks.SMOKER
+                || block == Blocks.BREWING_STAND
+                || block == Blocks.CRAFTER
+                || block == Blocks.CHISELED_BOOKSHELF;
     }
 
     public static void toggle() {
