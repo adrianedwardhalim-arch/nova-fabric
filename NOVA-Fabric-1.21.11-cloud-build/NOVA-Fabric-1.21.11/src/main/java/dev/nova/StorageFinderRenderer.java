@@ -1,23 +1,32 @@
 package dev.nova;
 
+import java.nio.ByteBuffer;
+import java.util.OptionalDouble;
+import java.util.OptionalInt;
 
+import com.mojang.blaze3d.buffers.GpuBuffer;
+import com.mojang.blaze3d.buffers.GpuBufferSlice;
 import com.mojang.blaze3d.pipeline.RenderPipeline;
 import com.mojang.blaze3d.platform.DepthTestFunction;
+import com.mojang.blaze3d.systems.CommandEncoder;
+import com.mojang.blaze3d.systems.RenderPass;
 import com.mojang.blaze3d.systems.RenderSystem;
 import com.mojang.blaze3d.vertex.VertexFormat;
 import net.fabricmc.fabric.api.client.rendering.v1.world.WorldRenderContext;
 import net.fabricmc.fabric.api.client.rendering.v1.world.WorldRenderEvents;
 import net.minecraft.client.MinecraftClient;
+import net.minecraft.client.gl.MappableRingBuffer;
 import net.minecraft.client.gl.RenderPipelines;
 import net.minecraft.client.render.BufferBuilder;
 import net.minecraft.client.render.BuiltBuffer;
 import net.minecraft.client.util.BufferAllocator;
-import java.util.OptionalDouble;
-import java.util.OptionalInt;
 import net.minecraft.util.Identifier;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.Vec3d;
 import org.joml.Matrix4f;
+import org.joml.Vector3f;
+import org.joml.Vector4f;
+import org.lwjgl.system.MemoryUtil;
 
 public final class StorageFinderRenderer {
     private static final RenderPipeline THROUGH_WALLS_LINES = RenderPipelines.register(
@@ -29,6 +38,10 @@ public final class StorageFinderRenderer {
     );
 
     private static final BufferAllocator ALLOCATOR = new BufferAllocator(1 << 20);
+    private static final Vector4f COLOR_MODULATOR = new Vector4f(1.0F, 1.0F, 1.0F, 1.0F);
+    private static final Vector3f MODEL_OFFSET = new Vector3f();
+    private static final Matrix4f TEXTURE_MATRIX = new Matrix4f();
+    private static MappableRingBuffer vertexBuffer;
 
     private StorageFinderRenderer() {}
 
@@ -45,6 +58,8 @@ public final class StorageFinderRenderer {
                 ? Double.POSITIVE_INFINITY
                 : (double) StorageFinder.range * StorageFinder.range;
 
+        // Use the render event's matrix stack, as Fabric's 1.21.11 custom-pipeline
+        // example does, instead of manually subtracting the camera from every vertex.
         var matrices = context.matrices();
         matrices.push();
         matrices.translate(-camera.x, -camera.y, -camera.z);
@@ -110,41 +125,40 @@ public final class StorageFinderRenderer {
             BuiltBuffer.DrawParameters parameters = built.getDrawParameters();
             VertexFormat format = parameters.format();
             int byteCount = parameters.vertexCount() * format.getVertexSize();
-
-            // Upload vertices into a short-lived GPU buffer for this render pass.
-            var encoder = RenderSystem.getDevice().createCommandEncoder();
-            com.mojang.blaze3d.buffers.GpuBuffer vertices = RenderSystem.getDevice().createBuffer(
-                    () -> "NOVA StorageFinder vertices",
-                    com.mojang.blaze3d.buffers.GpuBuffer.USAGE_VERTEX | com.mojang.blaze3d.buffers.GpuBuffer.USAGE_MAP_WRITE,
-                    byteCount
-            );
-            try {
-                java.nio.ByteBuffer source = built.getBuffer();
-                try (var mapped = encoder.mapBuffer(vertices.slice(0, source.remaining()), false, true)) {
-                    org.lwjgl.system.MemoryUtil.memCopy(source, mapped.data());
-                }
-
-                RenderSystem.AutoStorageIndexBuffer indices =
-                        RenderSystem.getSequentialBuffer(THROUGH_WALLS_LINES.getVertexFormatMode());
-                var dynamicTransforms = RenderSystem.getDynamicUniforms().writeTransform(
-                        RenderSystem.getModelViewMatrix(), new org.joml.Vector4f(1f, 1f, 1f, 1f),
-                        new org.joml.Vector3f(), new Matrix4f()
+            if (vertexBuffer == null || vertexBuffer.size() < byteCount) {
+                if (vertexBuffer != null) vertexBuffer.close();
+                vertexBuffer = new MappableRingBuffer(
+                        () -> "NOVA StorageFinder vertex buffer",
+                        GpuBuffer.USAGE_VERTEX | GpuBuffer.USAGE_MAP_WRITE,
+                        byteCount
                 );
-                var framebuffer = client.getFramebuffer();
-                try (var pass = RenderSystem.getDevice().createCommandEncoder().createRenderPass(
-                        () -> "NOVA StorageFinder through-wall outlines",
-                        framebuffer.getColorAttachmentView(), OptionalInt.empty(),
-                        framebuffer.getDepthAttachmentView(), OptionalDouble.empty())) {
-                    pass.setPipeline(THROUGH_WALLS_LINES);
-                    RenderSystem.bindDefaultUniforms(pass);
-                    pass.setUniform("DynamicTransforms", dynamicTransforms);
-                    pass.setVertexBuffer(0, vertices);
-                    pass.setIndexBuffer(indices.getBuffer(parameters.indexCount()), indices.type());
-                    pass.drawIndexed(0, 0, parameters.indexCount(), 1);
-                }
-            } finally {
-                vertices.close();
             }
+
+            CommandEncoder encoder = RenderSystem.getDevice().createCommandEncoder();
+            ByteBuffer source = built.getBuffer();
+            try (GpuBuffer.MappedView mapped = encoder.mapBuffer(
+                    vertexBuffer.getBlocking().slice(0, source.remaining()), false, true)) {
+                MemoryUtil.memCopy(source, mapped.data());
+            }
+
+            RenderSystem.ShapeIndexBuffer indices =
+                    RenderSystem.getSequentialBuffer(THROUGH_WALLS_LINES.getVertexFormatMode());
+            GpuBufferSlice transforms = RenderSystem.getDynamicUniforms().write(
+                    RenderSystem.getModelViewMatrix(), COLOR_MODULATOR, MODEL_OFFSET, TEXTURE_MATRIX
+            );
+            var framebuffer = client.getFramebuffer();
+            try (RenderPass pass = RenderSystem.getDevice().createCommandEncoder().createRenderPass(
+                    () -> "NOVA StorageFinder through-wall outlines",
+                    framebuffer.getColorAttachmentView(), OptionalInt.empty(),
+                    framebuffer.getDepthAttachmentView(), OptionalDouble.empty())) {
+                pass.setPipeline(THROUGH_WALLS_LINES);
+                RenderSystem.bindDefaultUniforms(pass);
+                pass.setUniform("DynamicTransforms", transforms);
+                pass.setVertexBuffer(0, vertexBuffer.getBlocking());
+                pass.setIndexBuffer(indices.getIndexBuffer(parameters.indexCount()), indices.getIndexType());
+                pass.drawIndexed(0, 0, parameters.indexCount(), 1);
+            }
+            vertexBuffer.rotate();
         }
     }
 }
