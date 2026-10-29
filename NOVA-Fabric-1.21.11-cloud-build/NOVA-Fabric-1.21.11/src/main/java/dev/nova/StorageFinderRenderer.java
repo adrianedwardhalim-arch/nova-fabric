@@ -1,9 +1,7 @@
 package dev.nova;
 
 import net.fabricmc.fabric.api.client.event.lifecycle.v1.ClientTickEvents;
-import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.render.DrawStyle;
-import net.minecraft.util.math.Box;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.world.debug.gizmo.GizmoDrawing;
 
@@ -12,8 +10,9 @@ public final class StorageFinderRenderer {
     }
 
     public static void register() {
-        // Minecraft 1.21.11 has a dedicated gizmo renderer. Use it instead of
-        // a custom RenderLayer whose buffers may never be submitted by vanilla.
+        // Minecraft 1.21.11 collects these during the client tick and draws
+        // them in the world gizmo pass. Rebuild them every tick so the list
+        // always reflects currently loaded storage and the current settings.
         ClientTickEvents.END_CLIENT_TICK.register(client -> {
             if (!StorageFinder.enabled || client.world == null || client.player == null) {
                 return;
@@ -24,8 +23,6 @@ public final class StorageFinderRenderer {
                     ? Double.POSITIVE_INFINITY
                     : (double) StorageFinder.range * StorageFinder.range;
 
-            // Register short-lived gizmos each tick so moved/removed storage is
-            // updated promptly. ignoreOcclusion() explicitly draws through blocks.
             try (var scope = client.newGizmoScope()) {
                 for (var blockEntity : client.world.getBlockEntities()) {
                     BlockPos pos = blockEntity.getPos();
@@ -40,10 +37,13 @@ public final class StorageFinderRenderer {
                         continue;
                     }
 
+                    // Do not set a lifespan: the per-tick collector already
+                    // redraws these each tick. Persisting them created stale,
+                    // overlapping outlines after moving or changing settings.
                     GizmoDrawing.box(
-                            new Box(pos),
+                            pos,
                             DrawStyle.stroked(StorageFinder.highlightColor, 2.0F)
-                    ).ignoreOcclusion().withLifespan(100);
+                    ).ignoreOcclusion();
                 }
             }
         });
