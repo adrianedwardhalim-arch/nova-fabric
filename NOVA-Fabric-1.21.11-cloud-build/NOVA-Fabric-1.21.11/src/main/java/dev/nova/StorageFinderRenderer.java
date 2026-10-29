@@ -91,7 +91,10 @@ public final class StorageFinderRenderer {
         }
 
         if (count == 0) {
-            builder.end().close();
+            BuiltBuffer empty = builder.endNullable();
+            if (empty != null) {
+                empty.close();
+            }
             ALLOCATOR.clear();
             return;
         }
