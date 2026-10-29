@@ -143,7 +143,7 @@ public final class StorageFinderRenderer {
 
             RenderSystem.ShapeIndexBuffer indices =
                     RenderSystem.getSequentialBuffer(THROUGH_WALLS_LINES.getVertexFormatMode());
-            GpuBufferSlice transforms = RenderSystem.getDynamicUniforms().writeTransform(
+            GpuBufferSlice transforms = RenderSystem.getDynamicUniforms().write(
                     RenderSystem.getModelViewMatrix(), COLOR_MODULATOR, MODEL_OFFSET, TEXTURE_MATRIX
             );
             var framebuffer = client.getFramebuffer();
