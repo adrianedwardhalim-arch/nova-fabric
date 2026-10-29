@@ -42,8 +42,8 @@ public final class StorageFinderRenderer {
                  x <= horizontalRadius; x++) {
                 for (int y = -verticalRadius;
                      y <= verticalRadius; y++) {
-                    for (int z = -HORIZONTAL_RADIUS;
-                         z <= HORIZONTAL_RADIUS; z++) {
+                    for (int z = -horizontalRadius;
+                         z <= horizontalRadius; z++) {
 
                         pos.set(
                                 center.getX() + x,
