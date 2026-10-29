@@ -19,7 +19,6 @@ import net.minecraft.client.gl.MappableRingBuffer;
 import net.minecraft.client.gl.RenderPipelines;
 import net.minecraft.client.render.BufferBuilder;
 import net.minecraft.client.render.BuiltBuffer;
-import net.minecraft.client.render.RenderLayer;
 import net.minecraft.client.util.BufferAllocator;
 import net.minecraft.util.Identifier;
 import net.minecraft.util.math.BlockPos;
@@ -61,7 +60,7 @@ public final class StorageFinderRenderer {
             return;
         }
 
-        Vec3d camera = client.gameRenderer.getCamera().getPos();
+        Vec3d camera = client.gameRenderer.getCamera().getCameraPos();
         BlockPos center = BlockPos.ofFloored(camera.x, camera.y, camera.z);
         double maxDistanceSquared = StorageFinder.range == -1
                 ? Double.POSITIVE_INFINITY
@@ -158,9 +157,9 @@ public final class StorageFinderRenderer {
                 MemoryUtil.memCopy(source, mapped.data());
             }
 
-            RenderSystem.AutoStorageIndexBuffer indices =
+            RenderSystem.ShapeIndexBuffer indices =
                     RenderSystem.getSequentialBuffer(THROUGH_WALLS_LINES.getVertexFormatMode());
-            GpuBufferSlice transforms = RenderSystem.getDynamicUniforms().writeTransform(
+            GpuBufferSlice transforms = RenderSystem.getDynamicUniforms().write(
                     RenderSystem.getModelViewMatrix(), COLOR_MODULATOR, MODEL_OFFSET, TEXTURE_MATRIX
             );
 
@@ -173,7 +172,7 @@ public final class StorageFinderRenderer {
                 RenderSystem.bindDefaultUniforms(pass);
                 pass.setUniform("DynamicTransforms", transforms);
                 pass.setVertexBuffer(0, vertexBuffer.getBlocking());
-                pass.setIndexBuffer(indices.getBuffer(parameters.indexCount()), indices.type());
+                pass.setIndexBuffer(indices.getIndexBuffer(parameters.indexCount()), indices.getIndexType());
                 pass.drawIndexed(0, 0, parameters.indexCount(), 1);
             }
 
