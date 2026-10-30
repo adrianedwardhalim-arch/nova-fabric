@@ -170,22 +170,31 @@ public final class StorageFinderRenderer {
                             float dx = (float) (x2 - x1);
                             float dy = (float) (y2 - y1);
                             float dz = (float) (z2 - z1);
+                            float length = (float) Math.sqrt(dx * dx + dy * dy + dz * dz);
+                            if (length < 1.0E-6F) {
+                                return;
+                            }
 
-                            // rendertype_lines expands each line from a pair of vertices
-                            // sharing the start position, using Normal as the line direction.
-                            builder.vertex(positionMatrix,
-                                            (float) (worldX + x1),
-                                            (float) (worldY + y1),
-                                            (float) (worldZ + z1))
+                            // Match Wurst's line vertex construction: both vertices
+                            // carry the same normalized direction, but their Position
+                            // values are the actual start and end of the edge.
+                            float nx = dx / length;
+                            float ny = dy / length;
+                            float nz = dz / length;
+                            float sx = (float) (worldX + x1);
+                            float sy = (float) (worldY + y1);
+                            float sz = (float) (worldZ + z1);
+                            float ex = (float) (worldX + x2);
+                            float ey = (float) (worldY + y2);
+                            float ez = (float) (worldZ + z2);
+
+                            builder.vertex(positionMatrix, sx, sy, sz)
                                     .color(color)
-                                    .normal(dx, dy, dz)
+                                    .normal(nx, ny, nz)
                                     .lineWidth(2.0F);
-                            builder.vertex(positionMatrix,
-                                            (float) (worldX + x1),
-                                            (float) (worldY + y1),
-                                            (float) (worldZ + z1))
+                            builder.vertex(positionMatrix, ex, ey, ez)
                                     .color(color)
-                                    .normal(dx, dy, dz)
+                                    .normal(nx, ny, nz)
                                     .lineWidth(2.0F);
                         });
                         matchedBlocks++;
