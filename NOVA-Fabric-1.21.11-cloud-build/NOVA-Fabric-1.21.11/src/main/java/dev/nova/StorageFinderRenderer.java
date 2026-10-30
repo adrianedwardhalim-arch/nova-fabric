@@ -41,7 +41,6 @@ public final class StorageFinderRenderer {
     );
 
     private static final BufferAllocator ALLOCATOR = new BufferAllocator(1 << 20);
-    private static final Matrix4f IDENTITY = new Matrix4f();
     private static final Vector4f COLOR_MODULATOR = new Vector4f(1.0F, 1.0F, 1.0F, 1.0F);
     private static final Vector3f MODEL_OFFSET = new Vector3f();
     private static final Matrix4f TEXTURE_MATRIX = new Matrix4f();
@@ -124,8 +123,8 @@ public final class StorageFinderRenderer {
                         float ny = Math.abs(y2 - y1) > 1.0E-7 ? 1.0F : 0.0F;
                         float nz = Math.abs(z2 - z1) > 1.0E-7 ? 1.0F : 0.0F;
 
-                        throughWallBuilder.vertex(IDENTITY, ax, ay, az).color(color).normal(nx, ny, nz).lineWidth(2.0F);
-                        throughWallBuilder.vertex(IDENTITY, bx, by, bz).color(color).normal(nx, ny, nz).lineWidth(2.0F);
+                        throughWallBuilder.vertex(matrices.peek().getPositionMatrix(), ax, ay, az).color(color).normal(nx, ny, nz).lineWidth(2.0F);
+                        throughWallBuilder.vertex(matrices.peek().getPositionMatrix(), bx, by, bz).color(color).normal(nx, ny, nz).lineWidth(2.0F);
                     });
                     matchedBlocks++;
                 }
