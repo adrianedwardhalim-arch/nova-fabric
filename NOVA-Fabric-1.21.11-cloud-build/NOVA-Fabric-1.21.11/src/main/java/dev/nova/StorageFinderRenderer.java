@@ -120,12 +120,20 @@ public final class StorageFinderRenderer {
                         float bx = (float) (rx + x2);
                         float by = (float) (ry + y2);
                         float bz = (float) (rz + z2);
-                        float nx = Math.abs(x2 - x1) > 1.0E-7 ? 1.0F : 0.0F;
-                        float ny = Math.abs(y2 - y1) > 1.0E-7 ? 1.0F : 0.0F;
-                        float nz = Math.abs(z2 - z1) > 1.0E-7 ? 1.0F : 0.0F;
+                        // Match the exact transform used by the proven build #21 outline pass.
+                        // Bake the camera rotation into both the line start and direction, then
+                        // use an identity model-view uniform when submitting the GPU pass.
+                        Matrix4f positionMatrix = matrices.peek().getPositionMatrix();
+                        Vector3f start = new Vector3f(ax, ay, az);
+                        Vector3f end = new Vector3f(bx, by, bz);
+                        positionMatrix.transformPosition(start);
+                        positionMatrix.transformPosition(end);
+                        Vector3f direction = new Vector3f(end).sub(start);
 
-                        throughWallBuilder.vertex(IDENTITY, ax, ay, az).color(color).normal(bx - ax, by - ay, bz - az).lineWidth(2.0F);
-                        throughWallBuilder.vertex(IDENTITY, ax, ay, az).color(color).normal(bx - ax, by - ay, bz - az).lineWidth(2.0F);
+                        throughWallBuilder.vertex(IDENTITY, start.x, start.y, start.z)
+                                .color(color).normal(direction.x, direction.y, direction.z).lineWidth(2.0F);
+                        throughWallBuilder.vertex(IDENTITY, start.x, start.y, start.z)
+                                .color(color).normal(direction.x, direction.y, direction.z).lineWidth(2.0F);
                     });
                     matchedBlocks++;
                 }
@@ -176,7 +184,7 @@ public final class StorageFinderRenderer {
             RenderSystem.ShapeIndexBuffer indices =
                     RenderSystem.getSequentialBuffer(THROUGH_WALLS_LINES.getVertexFormatMode());
             GpuBufferSlice transforms = RenderSystem.getDynamicUniforms().write(
-                    RenderSystem.getModelViewMatrix(), COLOR_MODULATOR, MODEL_OFFSET, TEXTURE_MATRIX
+                    IDENTITY, COLOR_MODULATOR, MODEL_OFFSET, TEXTURE_MATRIX
             );
 
             var framebuffer = client.getFramebuffer();
