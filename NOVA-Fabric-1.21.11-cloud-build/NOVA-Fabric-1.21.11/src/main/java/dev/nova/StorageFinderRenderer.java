@@ -50,12 +50,19 @@ public final class StorageFinderRenderer {
     }
 
     public static void register() {
-        // Keep the proven build #21 outline renderer; add a separate no-depth pass
-        // so the same block shapes are also visible through solid walls.
-        WorldRenderEvents.BEFORE_DEBUG_RENDER.register(StorageFinderRenderer::render);
+        // The proven build #21 renderer remains its own, unchanged depth-tested pass.
+        WorldRenderEvents.BEFORE_DEBUG_RENDER.register(StorageFinderRenderer::renderNormalOutlines);
+
+        // Fabric's 1.21.11 custom-pipeline example performs extraction and the
+        // no-depth draw at BEFORE_TRANSLUCENT, not BEFORE_DEBUG_RENDER.
+        WorldRenderEvents.BEFORE_TRANSLUCENT.register(StorageFinderRenderer::renderThroughWalls);
     }
 
-    private static void render(WorldRenderContext context) {
+    /**
+     * Original build #21 outline path. Keep this depth-tested pass separate
+     * from the custom no-depth pass below.
+     */
+    private static void renderNormalOutlines(WorldRenderContext context) {
         if (!StorageFinder.enabled) {
             return;
         }
@@ -71,19 +78,9 @@ public final class StorageFinderRenderer {
         int horizontalRadius = StorageFinder.range == -1 ? 64 : StorageFinder.range;
         int verticalRadius = StorageFinder.range == -1 ? 32 : StorageFinder.range;
 
-        // Original build #21 renderer, preserved unchanged for the normal visible outline.
         var matrices = context.matrices();
         var lines = context.consumers().getBuffer(RenderLayers.LINES);
         BlockPos.Mutable pos = new BlockPos.Mutable();
-
-        // A second buffer draws the same block outline edges with depth testing disabled.
-        BufferBuilder throughWallBuilder = new BufferBuilder(
-                ALLOCATOR,
-                THROUGH_WALLS_LINES.getVertexFormatMode(),
-                THROUGH_WALLS_LINES.getVertexFormat()
-        );
-        int matchedBlocks = 0;
-        int color = StorageFinder.highlightColor;
 
         for (int x = -horizontalRadius; x <= horizontalRadius; x++) {
             for (int y = -verticalRadius; y <= verticalRadius; y++) {
@@ -100,49 +97,107 @@ public final class StorageFinderRenderer {
                         continue;
                     }
 
-                    double rx = pos.getX() - cameraPos.x;
-                    double ry = pos.getY() - cameraPos.y;
-                    double rz = pos.getZ() - cameraPos.z;
-
-                    // Build #21 depth-tested outline, unchanged.
                     VertexRendering.drawOutline(
-                            matrices, lines, shape,
-                            rx, ry, rz,
-                            color, 2.0F
+                            matrices,
+                            lines,
+                            shape,
+                            pos.getX() - cameraPos.x,
+                            pos.getY() - cameraPos.y,
+                            pos.getZ() - cameraPos.z,
+                            StorageFinder.highlightColor,
+                            2.0F
                     );
-
-                    // Use Fabric's documented 1.21.11 custom-pipeline transform:
-                    // translate the pose stack by -camera position and submit world coordinates.
-                    matrices.push();
-                    matrices.translate(-cameraPos.x, -cameraPos.y, -cameraPos.z);
-                    Matrix4f positionMatrix = matrices.peek().getPositionMatrix();
-                    final double worldX = pos.getX();
-                    final double worldY = pos.getY();
-                    final double worldZ = pos.getZ();
-                    shape.forEachEdge((x1, y1, z1, x2, y2, z2) -> {
-                        throughWallBuilder.vertex(positionMatrix,
-                                        (float) (worldX + x1),
-                                        (float) (worldY + y1),
-                                        (float) (worldZ + z1))
-                                .color(color)
-                                .normal((float) (x2 - x1), (float) (y2 - y1), (float) (z2 - z1))
-                                .lineWidth(2.0F);
-                        throughWallBuilder.vertex(positionMatrix,
-                                        (float) (worldX + x1),
-                                        (float) (worldY + y1),
-                                        (float) (worldZ + z1))
-                                .color(color)
-                                .normal((float) (x2 - x1), (float) (y2 - y1), (float) (z2 - z1))
-                                .lineWidth(2.0F);
-                    });
-                    matrices.pop();
-                    matchedBlocks++;
                 }
             }
         }
+    }
+
+    /**
+     * Fabric 1.21.11 custom-pipeline pattern: extract world-space geometry
+     * with the camera-translated pose stack, then draw it with a no-depth pipeline.
+     */
+    private static void renderThroughWalls(WorldRenderContext context) {
+        if (!StorageFinder.enabled) {
+            return;
+        }
+
+        MinecraftClient client = MinecraftClient.getInstance();
+        if (client.world == null || client.player == null) {
+            return;
+        }
+
+        var camera = client.gameRenderer.getCamera();
+        Vec3d cameraPos = camera.getCameraPos();
+        BlockPos center = camera.getBlockPos();
+        int horizontalRadius = StorageFinder.range == -1 ? 64 : StorageFinder.range;
+        int verticalRadius = StorageFinder.range == -1 ? 32 : StorageFinder.range;
+        int color = StorageFinder.highlightColor;
+
+        var matrices = context.matrices();
+        BlockPos.Mutable pos = new BlockPos.Mutable();
+        BufferBuilder builder = new BufferBuilder(
+                ALLOCATOR,
+                THROUGH_WALLS_LINES.getVertexFormatMode(),
+                THROUGH_WALLS_LINES.getVertexFormat()
+        );
+
+        int matchedBlocks = 0;
+        matrices.push();
+        matrices.translate(-cameraPos.x, -cameraPos.y, -cameraPos.z);
+        Matrix4f positionMatrix = matrices.peek().getPositionMatrix();
+
+        try {
+            for (int x = -horizontalRadius; x <= horizontalRadius; x++) {
+                for (int y = -verticalRadius; y <= verticalRadius; y++) {
+                    for (int z = -horizontalRadius; z <= horizontalRadius; z++) {
+                        pos.set(center.getX() + x, center.getY() + y, center.getZ() + z);
+                        BlockState state = client.world.getBlockState(pos);
+
+                        if (!StorageFinder.isStorage(state)) {
+                            continue;
+                        }
+
+                        var shape = state.getOutlineShape(client.world, pos);
+                        if (shape.isEmpty()) {
+                            continue;
+                        }
+
+                        final double worldX = pos.getX();
+                        final double worldY = pos.getY();
+                        final double worldZ = pos.getZ();
+
+                        shape.forEachEdge((x1, y1, z1, x2, y2, z2) -> {
+                            float dx = (float) (x2 - x1);
+                            float dy = (float) (y2 - y1);
+                            float dz = (float) (z2 - z1);
+
+                            // rendertype_lines expands each line from a pair of vertices
+                            // sharing the start position, using Normal as the line direction.
+                            builder.vertex(positionMatrix,
+                                            (float) (worldX + x1),
+                                            (float) (worldY + y1),
+                                            (float) (worldZ + z1))
+                                    .color(color)
+                                    .normal(dx, dy, dz)
+                                    .lineWidth(2.0F);
+                            builder.vertex(positionMatrix,
+                                            (float) (worldX + x1),
+                                            (float) (worldY + y1),
+                                            (float) (worldZ + z1))
+                                    .color(color)
+                                    .normal(dx, dy, dz)
+                                    .lineWidth(2.0F);
+                        });
+                        matchedBlocks++;
+                    }
+                }
+            }
+        } finally {
+            matrices.pop();
+        }
 
         if (matchedBlocks == 0) {
-            BuiltBuffer empty = throughWallBuilder.endNullable();
+            BuiltBuffer empty = builder.endNullable();
             if (empty != null) {
                 empty.close();
             }
@@ -150,7 +205,7 @@ public final class StorageFinderRenderer {
             return;
         }
 
-        BuiltBuffer built = throughWallBuilder.end();
+        BuiltBuffer built = builder.end();
         try {
             drawThroughWalls(client, built);
         } finally {
