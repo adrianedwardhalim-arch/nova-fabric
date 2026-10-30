@@ -41,7 +41,6 @@ public final class StorageFinderRenderer {
     );
 
     private static final BufferAllocator ALLOCATOR = new BufferAllocator(1 << 20);
-    private static final Matrix4f IDENTITY = new Matrix4f();
     private static final Vector4f COLOR_MODULATOR = new Vector4f(1.0F, 1.0F, 1.0F, 1.0F);
     private static final Vector3f MODEL_OFFSET = new Vector3f();
     private static final Matrix4f TEXTURE_MATRIX = new Matrix4f();
@@ -112,29 +111,31 @@ public final class StorageFinderRenderer {
                             color, 2.0F
                     );
 
-                    // Match the exact VoxelShape edges, but submit them to a no-depth pipeline.
+                    // Use Fabric's documented 1.21.11 custom-pipeline transform:
+                    // translate the pose stack by -camera position and submit world coordinates.
+                    matrices.push();
+                    matrices.translate(-cameraPos.x, -cameraPos.y, -cameraPos.z);
+                    Matrix4f positionMatrix = matrices.peek().getPositionMatrix();
+                    final double worldX = pos.getX();
+                    final double worldY = pos.getY();
+                    final double worldZ = pos.getZ();
                     shape.forEachEdge((x1, y1, z1, x2, y2, z2) -> {
-                        float ax = (float) (rx + x1);
-                        float ay = (float) (ry + y1);
-                        float az = (float) (rz + z1);
-                        float bx = (float) (rx + x2);
-                        float by = (float) (ry + y2);
-                        float bz = (float) (rz + z2);
-                        // Match the exact transform used by the proven build #21 outline pass.
-                        // Bake the camera rotation into both the line start and direction, then
-                        // use an identity model-view uniform when submitting the GPU pass.
-                        Matrix4f positionMatrix = matrices.peek().getPositionMatrix();
-                        Vector3f start = new Vector3f(ax, ay, az);
-                        Vector3f end = new Vector3f(bx, by, bz);
-                        positionMatrix.transformPosition(start);
-                        positionMatrix.transformPosition(end);
-                        Vector3f direction = new Vector3f(end).sub(start);
-
-                        throughWallBuilder.vertex(IDENTITY, start.x, start.y, start.z)
-                                .color(color).normal(direction.x, direction.y, direction.z).lineWidth(2.0F);
-                        throughWallBuilder.vertex(IDENTITY, start.x, start.y, start.z)
-                                .color(color).normal(direction.x, direction.y, direction.z).lineWidth(2.0F);
+                        throughWallBuilder.vertex(positionMatrix,
+                                        (float) (worldX + x1),
+                                        (float) (worldY + y1),
+                                        (float) (worldZ + z1))
+                                .color(color)
+                                .normal((float) (x2 - x1), (float) (y2 - y1), (float) (z2 - z1))
+                                .lineWidth(2.0F);
+                        throughWallBuilder.vertex(positionMatrix,
+                                        (float) (worldX + x1),
+                                        (float) (worldY + y1),
+                                        (float) (worldZ + z1))
+                                .color(color)
+                                .normal((float) (x2 - x1), (float) (y2 - y1), (float) (z2 - z1))
+                                .lineWidth(2.0F);
                     });
+                    matrices.pop();
                     matchedBlocks++;
                 }
             }
@@ -184,7 +185,7 @@ public final class StorageFinderRenderer {
             RenderSystem.ShapeIndexBuffer indices =
                     RenderSystem.getSequentialBuffer(THROUGH_WALLS_LINES.getVertexFormatMode());
             GpuBufferSlice transforms = RenderSystem.getDynamicUniforms().write(
-                    IDENTITY, COLOR_MODULATOR, MODEL_OFFSET, TEXTURE_MATRIX
+                    RenderSystem.getModelViewMatrix(), COLOR_MODULATOR, MODEL_OFFSET, TEXTURE_MATRIX
             );
 
             var framebuffer = client.getFramebuffer();
